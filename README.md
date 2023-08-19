@@ -1,5 +1,8 @@
 # netfilter-test
 
+You should place this repo on <i>libnetfilter_queue-1.0.3/here</i> <br>
+This code based on [netfilter.org](https://netfilter.org/projects/libnetfilter_queue/downloads.html) <br>
+
 <b>Build</b>
 <pre>
   <code>
@@ -22,7 +25,3 @@
     sudo iptables -A INPUT -p tcp -j NFQUEUE
   </code>
 </pre>
-
-<br>
-This code based on [netfilter.org](https://netfilter.org/projects/libnetfilter_queue/downloads.html) <br>
-You should place this repo on <i>libnetfilter_queue-1.0.3/here</i> <br>
