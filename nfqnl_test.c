@@ -7,11 +7,16 @@
 #include <errno.h>
 
 #include <libnetfilter_queue/libnetfilter_queue.h>
+#include <netinet/ip.h>
+#include <netinet/tcp.h>
+
+char *target_host;
+int vertict;
 
 void dump(unsigned char* buf, int size) {
 	int i;
 	for (i = 0; i < size; i++) {
-		if (i % 16 == 0)
+		if (i != 0 && i % 16 == 0)
 			printf("\n");
 		printf("%02X ", buf[i]);
 	}
@@ -76,8 +81,34 @@ static uint32_t print_pkt (struct nfq_data *tb)
 
 	ret = nfq_get_payload(tb, &data);
 	if (ret >= 0) {
-		dump(data, ret);
-		printf("payload_len=%d ", ret);
+//		dump(data, ret);
+		printf("payload_len=%d ", ret);	
+		
+		unsigned char host_hex[] = {0x48, 0x6f, 0x73, 0x74, 0x3a, 0x20};
+		int host_hex_len = sizeof(host_hex) / sizeof(host_hex[0]);
+		
+		for (int i = 0; i < ret - host_hex_len + 1; i++)
+			if(memcmp(data + i, host_hex, host_hex_len) == 0) {
+				char *host_start = (char *)(data + i + host_hex_len);
+				char *end_of_line = strchr(host_start, '\r');
+				if(end_of_line){
+					*end_of_line = '\0';
+					int host_len = end_of_line - host_start;
+					char *host;
+					strncpy(host, host_start, host_len);
+					printf("Host: s\n", host);
+					if(strcmp(host, target_host) == 0)
+					{
+						vertict = NF_DROP;
+						printf("%s got dropped...\n", host_start);
+					}
+					else
+					{
+						vertict = NF_ACCEPT;
+						printf("%s got accepted...\n", host_start);
+					}
+				}
+			}
 	}
 	fputc('\n', stdout);
 
@@ -88,9 +119,10 @@ static uint32_t print_pkt (struct nfq_data *tb)
 static int cb(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg,
 	      struct nfq_data *nfa, void *data)
 {
+	vertict = NF_ACCEPT;
 	uint32_t id = print_pkt(nfa);
 	printf("entering callback\n");
-	return nfq_set_verdict(qh, id, NF_ACCEPT, 0, NULL);
+	return nfq_set_verdict(qh, id, vertict, 0, NULL);
 }
 
 int main(int argc, char **argv)
@@ -102,13 +134,13 @@ int main(int argc, char **argv)
 	uint32_t queue = 0;
 	char buf[4096] __attribute__ ((aligned));
 
-	if (argc == 2) {
-		queue = atoi(argv[1]);
-		if (queue > 65535) {
-			fprintf(stderr, "Usage: %s [<0-65535>]\n", argv[0]);
-			exit(EXIT_FAILURE);
-		}
+	if (argc != 2) {
+		fprintf(stderr, "Usage: %s <host>\n", argv[0]);
+		exit(1);
 	}
+	
+	target_host = argv[1];
+	printf("target host: %s\n", target_host);
 
 	printf("opening library handle\n");
 	h = nfq_open();
