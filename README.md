@@ -1,7 +1,7 @@
 # netfilter-test
 
-You should place this repo on <i>libnetfilter_queue-1.0.3/here</i> <br>
 This code based on [netfilter.org](https://netfilter.org/projects/libnetfilter_queue/downloads.html) <br>
+You should place this repo on <i>path/to/libnetfilter_queue-1.0.3/here</i> <br>
 
 <b>Build</b>
 <pre>
